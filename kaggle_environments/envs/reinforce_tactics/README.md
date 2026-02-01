@@ -105,7 +105,7 @@ Each turn, an agent returns a list of action dicts:
 | Parameter      | Default            | Description |
 |----------------|--------------------|-------------|
 | `episodeSteps` | 200                | Max turns before draw |
-| `mapName`      | `""` (random)      | Built-in map name (see below), or empty for random generation |
+| `mapName`      | `"beginner"`       | Built-in map name (see below), or empty for random generation |
 | `mapWidth`     | 20                 | Map width (10-40) &mdash; only used when `mapName` is empty |
 | `mapHeight`    | 20                 | Map height (10-40) &mdash; only used when `mapName` is empty |
 | `mapSeed`      | -1 (random)        | Seed for map generation &mdash; only used when `mapName` is empty |

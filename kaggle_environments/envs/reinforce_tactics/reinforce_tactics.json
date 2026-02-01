@@ -44,7 +44,7 @@
     "mapName": {
       "description": "Name of a built-in map to use (e.g. 'beginner', 'crossroads', 'tower_rush'). Leave empty for random generation.",
       "type": "string",
-      "default": ""
+      "default": "beginner"
     },
     "enabledUnits": {
       "description": "Comma-separated list of enabled unit types (W=Warrior, M=Mage, C=Cleric, A=Archer, K=Knight, R=Rogue, S=Sorcerer, B=Barbarian).",

@@ -49,9 +49,15 @@ def test_can_reset():
     assert state[1]["observation"]["player"] == 1
 
 
-def test_board_has_ocean_default():
-    """Verify the generated map uses ocean as the default tile."""
+def test_defaults_to_beginner_map():
+    """When no mapName is provided, the beginner map should be used."""
     before_each()
+    assert env.configuration.mapName == "beginner"
+
+
+def test_random_map_has_ocean_default():
+    """Verify a randomly generated map uses ocean as the default tile."""
+    before_each(configuration={"mapName": "", "mapSeed": 42})
     state = env.reset()
     board = state[0]["observation"]["board"]
     flat = [cell for row in board for cell in row]
