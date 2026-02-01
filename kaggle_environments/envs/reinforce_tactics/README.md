@@ -112,6 +112,19 @@ Each turn, an agent returns a list of action dicts:
 | `fogOfWar`     | false              | Enable fog of war |
 | `startingGold` | 250                | Starting gold per player |
 
+## Maps
+
+The default map generator creates a playable map with an ocean border, grass
+interior, and randomly placed forests, mountains, and water features. Player
+headquarters, buildings, and neutral towers are placed at fixed positions
+relative to the map corners and centre.
+
+For custom gameplay, you can supply your own map data when constructing a
+`GameState` directly. Map tiles use single-character codes (see Terrain table
+above), with optional `_<player>` suffixes for owned structures (e.g. `h_1`,
+`b_2`). The default tile for invalid or empty map data is `o` (ocean /
+impassable border).
+
 ## Quick Start
 
 ```python

@@ -12,16 +12,8 @@
       "default": 200,
       "minimum": 1
     },
-    "actTimeout": {
-      "description": "Seconds allowed per agent action.",
-      "type": "integer",
-      "default": 5
-    },
-    "runTimeout": {
-      "description": "Seconds allowed per episode.",
-      "type": "integer",
-      "default": 1200
-    },
+    "actTimeout": 5,
+    "runTimeout": 1200,
     "mapWidth": {
       "description": "Width of the game map.",
       "type": "integer",
