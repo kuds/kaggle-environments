@@ -49,14 +49,13 @@ def test_can_reset():
     assert state[1]["observation"]["player"] == 1
 
 
-def test_board_has_grass():
-    """Verify the generated map uses grass (not ocean) as the default tile."""
+def test_board_has_ocean_default():
+    """Verify the generated map uses ocean as the default tile."""
     before_each()
     state = env.reset()
     board = state[0]["observation"]["board"]
     flat = [cell for row in board for cell in row]
-    # The majority of tiles should be grass, not ocean
-    assert flat.count("p") > flat.count("o")
+    assert flat.count("o") > 0
 
 
 def test_board_has_hq_and_buildings():

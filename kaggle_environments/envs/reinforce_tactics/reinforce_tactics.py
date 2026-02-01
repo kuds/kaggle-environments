@@ -267,7 +267,7 @@ def _generate_map(width, height, num_players=2):
     width = max(width, 20)
     height = max(height, 20)
 
-    map_data = np.full((height, width), 'p', dtype=object)
+    map_data = np.full((height, width), 'o', dtype=object)
 
     num_tiles = width * height
 
