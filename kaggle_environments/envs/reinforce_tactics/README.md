@@ -38,7 +38,7 @@ Gold is spent to recruit units at buildings or the headquarters.
 |----------|------|--------|
 | Grass    | `p`  | Normal movement |
 | Forest   | `f`  | +30% evasion for Rogues, blocks ranged line of sight |
-| Mountain | `m`  | Impassable; Archers gain +1 range when adjacent |
+| Mountain | `m`  | Walkable; Archers gain +1 range when standing on it |
 | Water    | `w`  | Impassable |
 | Road     | `r`  | Normal movement |
 | Building | `b`  | Capturable; provides income and unit recruitment |

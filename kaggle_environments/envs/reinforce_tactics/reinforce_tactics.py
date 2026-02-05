@@ -18,6 +18,8 @@ from os import path
 
 import numpy as np
 
+from .agents.random_agent import agent as _random_agent
+from .agents.simple_bot_agent import agent as _simple_bot_agent
 from .reinforce_tactics_engine import UNIT_DATA, GameState
 
 logger = logging.getLogger(__name__)
@@ -687,47 +689,15 @@ def html_renderer():
 # ---------------------------------------------------------------------------
 # Built-in Agents
 # ---------------------------------------------------------------------------
-def _random_agent(observation, configuration):
-    """Agent that always ends its turn immediately."""
+
+
+def _noop_agent(observation, configuration):
+    """Agent that always ends its turn immediately (does nothing)."""
     return [{"type": "end_turn"}]
-
-
-def _aggressive_agent(observation, configuration):
-    """
-    Simple agent that creates warriors at available buildings,
-    moves units toward the enemy, attacks when possible, and seizes
-    structures.
-    """
-    actions = []
-    player_idx = observation.player
-    player = player_idx + 1  # 1-indexed
-    gold = observation.gold[player_idx]
-
-    # Find available buildings (structures owned by us that are buildings)
-    structures = observation.structures if hasattr(observation, "structures") else []
-    my_buildings = [s for s in structures if s["owner"] == player and s["type"] == "b"]
-
-    # Try to create warriors at buildings
-    warrior_cost = UNIT_DATA["W"]["cost"]
-    occupied = {(u["x"], u["y"]) for u in observation.units}
-    for bldg in my_buildings:
-        if gold >= warrior_cost and (bldg["x"], bldg["y"]) not in occupied:
-            actions.append(
-                {
-                    "type": "create_unit",
-                    "unit_type": "W",
-                    "x": bldg["x"],
-                    "y": bldg["y"],
-                }
-            )
-            gold -= warrior_cost
-            occupied.add((bldg["x"], bldg["y"]))
-
-    actions.append({"type": "end_turn"})
-    return actions
 
 
 agents = {
     "random": _random_agent,
-    "aggressive": _aggressive_agent,
+    "simple_bot": _simple_bot_agent,
+    "noop": _noop_agent,
 }

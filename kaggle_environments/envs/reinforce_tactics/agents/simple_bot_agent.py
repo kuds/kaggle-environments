@@ -197,7 +197,7 @@ def _step_toward(from_x, from_y, to_x, to_y, board, occupied, map_w, map_h):
     best_pos = None
     best_dist = abs(from_x - to_x) + abs(from_y - to_y)
 
-    non_walkable = {"w", "o", "m"}
+    non_walkable = {"w", "o"}
 
     for dx, dy in [(0, -1), (0, 1), (-1, 0), (1, 0)]:
         nx, ny = from_x + dx, from_y + dy
