@@ -11,13 +11,14 @@ Required exports for kaggle-environments:
     - html_renderer(): Optional HTML/JS renderer
     - agents: Dict of built-in agent functions
 """
+
 import json
 import logging
 from os import path
 
 import numpy as np
 
-from .reinforce_tactics_engine import GameState, UNIT_DATA
+from .reinforce_tactics_engine import UNIT_DATA, GameState
 
 logger = logging.getLogger(__name__)
 
@@ -239,7 +240,7 @@ def _pad_map(map_rows, min_size=20):
     new_h = max(rows, min_size)
     new_w = max(cols, min_size)
 
-    padded = np.full((new_h, new_w), 'o', dtype=object)
+    padded = np.full((new_h, new_w), "o", dtype=object)
 
     offset_y = (new_h - rows) // 2
     offset_x = (new_w - cols) // 2
@@ -267,53 +268,53 @@ def _generate_map(width, height, num_players=2):
     width = max(width, 20)
     height = max(height, 20)
 
-    map_data = np.full((height, width), 'o', dtype=object)
+    map_data = np.full((height, width), "o", dtype=object)
 
     num_tiles = width * height
 
     # Forests (10%)
     for _ in range(num_tiles // 10):
         x, y = np.random.randint(0, width), np.random.randint(0, height)
-        map_data[y, x] = 'f'
+        map_data[y, x] = "f"
 
     # Mountains (5%)
     for _ in range(num_tiles // 20):
         x, y = np.random.randint(0, width), np.random.randint(0, height)
-        map_data[y, x] = 'm'
+        map_data[y, x] = "m"
 
     # Water (3%)
     for _ in range(num_tiles // 33):
         x, y = np.random.randint(0, width), np.random.randint(0, height)
-        map_data[y, x] = 'w'
+        map_data[y, x] = "w"
 
     # Player headquarters and buildings
     if num_players >= 1:
-        map_data[1, 1] = 'h_1'
-        map_data[1, 2] = 'b_1'
-        map_data[2, 1] = 'b_1'
+        map_data[1, 1] = "h_1"
+        map_data[1, 2] = "b_1"
+        map_data[2, 1] = "b_1"
 
     if num_players >= 2:
-        map_data[height - 2, width - 2] = 'h_2'
-        map_data[height - 2, width - 3] = 'b_2'
-        map_data[height - 3, width - 2] = 'b_2'
+        map_data[height - 2, width - 2] = "h_2"
+        map_data[height - 2, width - 3] = "b_2"
+        map_data[height - 3, width - 2] = "b_2"
 
     if num_players >= 3:
-        map_data[1, width - 2] = 'h_3'
-        map_data[1, width - 3] = 'b_3'
-        map_data[2, width - 2] = 'b_3'
+        map_data[1, width - 2] = "h_3"
+        map_data[1, width - 3] = "b_3"
+        map_data[2, width - 2] = "b_3"
 
     if num_players >= 4:
-        map_data[height - 2, 1] = 'h_4'
-        map_data[height - 2, 2] = 'b_4'
-        map_data[height - 3, 1] = 'b_4'
+        map_data[height - 2, 1] = "h_4"
+        map_data[height - 2, 2] = "b_4"
+        map_data[height - 3, 1] = "b_4"
 
     # Neutral towers in centre
     cx, cy = width // 2, height // 2
     for dx, dy in [(0, 0), (3, 0), (0, 3), (3, 3)]:
         x, y = cx + dx - 2, cy + dy - 2
         if 0 <= x < width and 0 <= y < height:
-            if map_data[y, x] == 'p':
-                map_data[y, x] = 't'
+            if map_data[y, x] == "p":
+                map_data[y, x] = "t"
 
     return pd.DataFrame(map_data)
 
@@ -447,7 +448,7 @@ def _exec_seize(game, action, player):
 
 def _exec_heal(game, action, player):
     """Handle heal action."""
-    healer, target = _get_source_target(game, action, player, 'C')
+    healer, target = _get_source_target(game, action, player, "C")
     if healer is None:
         return False
     return game.heal(healer, target) > 0
@@ -455,7 +456,7 @@ def _exec_heal(game, action, player):
 
 def _exec_cure(game, action, player):
     """Handle cure action."""
-    curer, target = _get_source_target(game, action, player, 'C')
+    curer, target = _get_source_target(game, action, player, "C")
     if curer is None:
         return False
     return game.cure(curer, target)
@@ -463,7 +464,7 @@ def _exec_cure(game, action, player):
 
 def _exec_paralyze(game, action, player):
     """Handle paralyze action."""
-    mage, target = _get_source_target(game, action, player, 'M')
+    mage, target = _get_source_target(game, action, player, "M")
     if mage is None:
         return False
     return game.paralyze(mage, target)
@@ -471,7 +472,7 @@ def _exec_paralyze(game, action, player):
 
 def _exec_haste(game, action, player):
     """Handle haste action."""
-    sorcerer, target = _get_source_target(game, action, player, 'S')
+    sorcerer, target = _get_source_target(game, action, player, "S")
     if sorcerer is None:
         return False
     return game.haste(sorcerer, target)
@@ -479,7 +480,7 @@ def _exec_haste(game, action, player):
 
 def _exec_defence_buff(game, action, player):
     """Handle defence_buff action."""
-    sorcerer, target = _get_source_target(game, action, player, 'S')
+    sorcerer, target = _get_source_target(game, action, player, "S")
     if sorcerer is None:
         return False
     return game.defence_buff(sorcerer, target)
@@ -487,7 +488,7 @@ def _exec_defence_buff(game, action, player):
 
 def _exec_attack_buff(game, action, player):
     """Handle attack_buff action."""
-    sorcerer, target = _get_source_target(game, action, player, 'S')
+    sorcerer, target = _get_source_target(game, action, player, "S")
     if sorcerer is None:
         return False
     return game.attack_buff(sorcerer, target)
@@ -560,14 +561,16 @@ def _serialize_structures(game):
     for row in game.grid.tiles:
         for tile in row:
             if tile.is_capturable():
-                structures.append({
-                    "x": tile.x,
-                    "y": tile.y,
-                    "type": tile.type,
-                    "owner": tile.player if tile.player else 0,
-                    "hp": tile.health if tile.health is not None else 0,
-                    "maxHp": tile.max_health if tile.max_health is not None else 0,
-                })
+                structures.append(
+                    {
+                        "x": tile.x,
+                        "y": tile.y,
+                        "type": tile.type,
+                        "owner": tile.player if tile.player else 0,
+                        "hp": tile.health if tile.health is not None else 0,
+                        "maxHp": tile.max_health if tile.max_health is not None else 0,
+                    }
+                )
     return structures
 
 
@@ -586,21 +589,23 @@ def _serialize_units(game, visible_for_player=None):
                 if not game.is_position_visible(unit.x, unit.y, visible_for_player):
                     continue
 
-        units.append({
-            "type": unit.type,
-            "owner": unit.player,
-            "x": unit.x,
-            "y": unit.y,
-            "hp": unit.health,
-            "maxHp": unit.max_health,
-            "canMove": unit.can_move,
-            "canAttack": unit.can_attack,
-            "paralyzedTurns": unit.paralyzed_turns,
-            "isHasted": unit.is_hasted,
-            "distanceMoved": unit.distance_moved,
-            "defenceBuffTurns": unit.defence_buff_turns,
-            "attackBuffTurns": unit.attack_buff_turns,
-        })
+        units.append(
+            {
+                "type": unit.type,
+                "owner": unit.player,
+                "x": unit.x,
+                "y": unit.y,
+                "hp": unit.health,
+                "maxHp": unit.max_health,
+                "canMove": unit.can_move,
+                "canAttack": unit.can_attack,
+                "paralyzedTurns": unit.paralyzed_turns,
+                "isHasted": unit.is_hasted,
+                "distanceMoved": unit.distance_moved,
+                "defenceBuffTurns": unit.defence_buff_turns,
+                "attackBuffTurns": unit.attack_buff_turns,
+            }
+        )
     return units
 
 
@@ -639,8 +644,15 @@ def renderer(state, env):
 
     # Tile display characters
     tile_chars = {
-        "p": ".", "w": "~", "m": "^", "f": "T",
-        "r": "=", "b": "B", "h": "H", "t": "#", "o": "~",
+        "p": ".",
+        "w": "~",
+        "m": "^",
+        "f": "T",
+        "r": "=",
+        "b": "B",
+        "h": "H",
+        "t": "#",
+        "o": "~",
     }
 
     lines = []
@@ -693,22 +705,21 @@ def _aggressive_agent(observation, configuration):
 
     # Find available buildings (structures owned by us that are buildings)
     structures = observation.structures if hasattr(observation, "structures") else []
-    my_buildings = [
-        s for s in structures
-        if s["owner"] == player and s["type"] == "b"
-    ]
+    my_buildings = [s for s in structures if s["owner"] == player and s["type"] == "b"]
 
     # Try to create warriors at buildings
     warrior_cost = UNIT_DATA["W"]["cost"]
     occupied = {(u["x"], u["y"]) for u in observation.units}
     for bldg in my_buildings:
         if gold >= warrior_cost and (bldg["x"], bldg["y"]) not in occupied:
-            actions.append({
-                "type": "create_unit",
-                "unit_type": "W",
-                "x": bldg["x"],
-                "y": bldg["y"],
-            })
+            actions.append(
+                {
+                    "type": "create_unit",
+                    "unit_type": "W",
+                    "x": bldg["x"],
+                    "y": bldg["y"],
+                }
+            )
             gold -= warrior_cost
             occupied.add((bldg["x"], bldg["y"]))
 

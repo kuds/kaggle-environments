@@ -137,9 +137,9 @@ behaviour). More maps from the main repository may be added in the future.
 env = make("reinforce_tactics", configuration={"mapName": "beginner"})
 ```
 
-#### Random generation (default)
+#### Random generation
 
-When `mapName` is empty (the default), a random map is generated using
+When `mapName` is set to an empty string, a random map is generated using
 `mapWidth`, `mapHeight`, and `mapSeed`. The random generator places terrain
 features (forests ~10%, mountains ~5%, water ~3%), two headquarters with
 adjacent buildings, and four neutral towers near the centre.
@@ -153,7 +153,7 @@ env = make("reinforce_tactics", configuration={
 })
 
 # Fully random map (different each run)
-env = make("reinforce_tactics")
+env = make("reinforce_tactics", configuration={"mapName": ""})
 ```
 
 #### Map format reference
