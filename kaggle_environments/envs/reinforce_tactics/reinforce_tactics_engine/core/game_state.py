@@ -96,10 +96,11 @@ class GameState:
         self.action_history: List[Dict[str, Any]] = []
         self.game_start_time: datetime = datetime.now()
 
-        # Cached values for performance
+        # Cached values for performance (separate validity flags to prevent stale cross-reads)
         self._unit_count_cache: Dict[int, int] = {}
+        self._unit_count_cache_valid: bool = False
         self._legal_actions_cache: Dict[int, Dict[str, List[Any]]] = {}
-        self._cache_valid: bool = False
+        self._legal_actions_cache_valid: bool = False
 
     def reset(self, map_data) -> None:
         """Reset the game state."""
@@ -130,8 +131,9 @@ class GameState:
 
     def _invalidate_cache(self) -> None:
         """Invalidate cached values."""
-        self._cache_valid = False
+        self._unit_count_cache_valid = False
         self._unit_count_cache.clear()
+        self._legal_actions_cache_valid = False
         self._legal_actions_cache.clear()
 
     def update_visibility(self, player: Optional[int] = None) -> None:
@@ -208,13 +210,13 @@ class GameState:
 
     def get_unit_count(self, player: int) -> int:
         """Get cached unit count for a player."""
-        if not self._cache_valid:
+        if not self._unit_count_cache_valid:
             self._unit_count_cache = {}
             for unit in self.units:
                 self._unit_count_cache[unit.player] = (
                     self._unit_count_cache.get(unit.player, 0) + 1
                 )
-            self._cache_valid = True
+            self._unit_count_cache_valid = True
         return self._unit_count_cache.get(player, 0)
 
     def get_unit_at_position(self, x: int, y: int) -> Optional[Unit]:
@@ -363,7 +365,8 @@ class GameState:
             if attacker_tile.is_capturable() and attacker_tile.health < attacker_tile.max_health:
                 attacker_tile.regenerating = True
             defeated_player = attacker.player
-            self.units.remove(attacker)
+            if attacker in self.units:
+                self.units.remove(attacker)
             self._invalidate_cache()
 
             remaining_units = [u for u in self.units if u.player == defeated_player]
@@ -378,8 +381,9 @@ class GameState:
                         else 1
                     )
 
-        attacker.can_move = False
-        attacker.can_attack = False
+        if result['attacker_alive']:
+            attacker.can_move = False
+            attacker.can_attack = False
         self._invalidate_cache()
 
         return result

@@ -76,11 +76,12 @@ class Tile:
                     min(int(base * 0.3 + player * 0.7), 255)
                     for base, player in zip(base_color, player_color)
                 )
-            # Regular terrain with owner: 60% base, 40% player
-            return tuple(
-                min(int(base * 0.6 + player * 0.4), 255)
-                for base, player in zip(base_color, player_color)
-            )
+            else:
+                # Regular terrain with owner: 60% base, 40% player
+                return tuple(
+                    min(int(base * 0.6 + player * 0.4), 255)
+                    for base, player in zip(base_color, player_color)
+                )
 
         return base_color
 
