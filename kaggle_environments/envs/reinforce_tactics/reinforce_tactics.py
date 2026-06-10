@@ -14,6 +14,7 @@ Required exports for kaggle-environments:
 
 import json
 import logging
+import random
 from os import path
 
 import numpy as np
@@ -118,7 +119,7 @@ def interpreter(state, env):
 
 def _interpreter_init(state, env, key):
     """Handle the first interpreter call (game initialisation)."""
-    game = _init_game(env.configuration)
+    game = _init_game(env.configuration, env)
     _games[key] = game
     _update_observations(state, game, env.configuration)
     state[0].status = "ACTIVE"
@@ -321,23 +322,53 @@ def _generate_map(width, height, num_players=2):
 # ---------------------------------------------------------------------------
 # Game Initialisation
 # ---------------------------------------------------------------------------
-def _init_game(config):
-    """Create a new GameState from the Kaggle configuration."""
+def _resolve_map(config, seed):
+    """
+    Resolve the map for this episode.
+
+    Precedence:
+      1. A valid non-empty ``mapName`` pins that built-in map.
+      2. Otherwise a map is drawn at random from ``mapPool`` (seeded).
+      3. Otherwise (no valid name, no valid pool entries) a map is
+         procedurally generated from ``mapWidth``/``mapHeight``.
+
+    Returns:
+        (map_name, map_data) -- map_name is "" for procedural maps.
+    """
     map_name = getattr(config, "mapName", "")
-
     if map_name and map_name in BUILTIN_MAPS:
-        # Use a built-in map (padded to minimum 20x20)
-        map_data = _pad_map(BUILTIN_MAPS[map_name])
-    else:
-        # Random generation
-        width = config.mapWidth
-        height = config.mapHeight
-        seed = config.mapSeed
+        return map_name, _pad_map(BUILTIN_MAPS[map_name])
 
-        if seed >= 0:
-            np.random.seed(seed)
+    pool = [n.strip() for n in (getattr(config, "mapPool", "") or "").split(",")]
+    pool = [n for n in pool if n in BUILTIN_MAPS]
+    if pool:
+        # Isolated RNG: pool selection must not perturb the global numpy
+        # state that procedural generation (and agents) may rely on.
+        chosen = random.Random(seed).choice(pool)
+        return chosen, _pad_map(BUILTIN_MAPS[chosen])
 
-        map_data = _generate_map(width, height, num_players=2)
+    np.random.seed(seed)
+    return "", _generate_map(config.mapWidth, config.mapHeight, num_players=2)
+
+
+def _init_game(config, env=None):
+    """Create a new GameState from the Kaggle configuration."""
+    # Resolve a concrete episode seed (mapSeed, or a fresh draw when -1) so
+    # the map choice is reproducible and can be recorded in the replay.
+    seed = getattr(config, "mapSeed", -1)
+    if seed < 0:
+        seed = random.randrange(2**31)
+
+    map_name, map_data = _resolve_map(config, seed)
+
+    # Record the outcome on env.info, which core.py persists into the
+    # replay. The board is fully observable, so unlike seeds that drive
+    # hidden information nothing needs scrubbing from configuration.
+    if env is not None:
+        if not hasattr(env, "info") or env.info is None:
+            env.info = {}
+        env.info["mapName"] = map_name
+        env.info["mapSeed"] = seed
 
     enabled_units = [u.strip() for u in config.enabledUnits.split(",") if u.strip()]
     fog_of_war = bool(config.fogOfWar)

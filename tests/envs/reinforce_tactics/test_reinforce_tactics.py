@@ -19,6 +19,7 @@ from kaggle_environments.envs.reinforce_tactics.reinforce_tactics import (
     _get_active_index,
     _init_game,
     _pad_map,
+    _resolve_map,
     _serialize_board,
     _serialize_structures,
     _serialize_units,
@@ -45,6 +46,7 @@ def _make_config(**overrides):
         "actTimeout": 5,
         "runTimeout": 1200,
         "mapName": "",  # Default to random generation in mocks for back-compat
+        "mapPool": "",  # No pool rotation in mocks; tests opt in explicitly
         "mapWidth": 20,
         "mapHeight": 20,
         "mapSeed": 42,
@@ -93,6 +95,7 @@ def _make_env(config=None, done=False):
         configuration=config,
         done=done,
         steps=[],
+        info={},
     )
 
 
@@ -149,11 +152,21 @@ class TestSpecification:
         assert cfg["startingGold"]["default"] == 250
 
     def test_map_name_field(self):
-        """mapName must be present with a built-in default."""
+        """mapName must be present and default to empty (pool rotation)."""
         cfg = specification["configuration"]
         assert "mapName" in cfg
         assert cfg["mapName"]["type"] == "string"
-        assert cfg["mapName"]["default"] in BUILTIN_MAPS
+        assert cfg["mapName"]["default"] == ""
+
+    def test_map_pool_field(self):
+        """mapPool must default to five valid built-in maps."""
+        cfg = specification["configuration"]
+        assert "mapPool" in cfg
+        assert cfg["mapPool"]["type"] == "string"
+        pool = [n.strip() for n in cfg["mapPool"]["default"].split(",")]
+        assert len(pool) == 5
+        for name in pool:
+            assert name in BUILTIN_MAPS, f"Pool map not in BUILTIN_MAPS: {name}"
 
     def test_timeouts_are_numbers(self):
         """actTimeout/runTimeout must accept floats per the upstream Kaggle schema."""
@@ -288,6 +301,91 @@ class TestInitGame:
         game = _init_game(config)
         assert game.grid.width == 24
         assert game.grid.height == 24
+
+
+# ---------------------------------------------------------------------------
+# Test: Map Pool Rotation
+# ---------------------------------------------------------------------------
+
+
+class TestMapPool:
+    """Tests for random map rotation via the mapPool configuration."""
+
+    POOL = "crossroads,the_narrows,island_fortress,center_mountains,cavalry_charge"
+    POOL_NAMES = POOL.split(",")
+
+    def test_pick_is_from_pool(self):
+        config = _make_config(mapPool=self.POOL)
+        for seed in range(20):
+            name, _data = _resolve_map(config, seed)
+            assert name in self.POOL_NAMES
+
+    def test_same_seed_same_map(self):
+        config = _make_config(mapPool=self.POOL)
+        name1, _ = _resolve_map(config, 123)
+        name2, _ = _resolve_map(config, 123)
+        assert name1 == name2
+
+    def test_rotation_covers_multiple_maps(self):
+        config = _make_config(mapPool=self.POOL)
+        names = {_resolve_map(config, seed)[0] for seed in range(50)}
+        assert len(names) > 1
+
+    def test_map_name_pins_over_pool(self):
+        config = _make_config(mapName="beginner", mapPool=self.POOL)
+        for seed in range(10):
+            name, _ = _resolve_map(config, seed)
+            assert name == "beginner"
+
+    def test_invalid_pool_entries_filtered(self):
+        config = _make_config(mapPool="bogus, crossroads ,nope")
+        for seed in range(10):
+            name, _ = _resolve_map(config, seed)
+            assert name == "crossroads"
+
+    def test_empty_pool_and_name_uses_procedural(self):
+        config = _make_config(mapName="", mapPool="", mapWidth=24, mapHeight=24)
+        name, data = _resolve_map(config, 7)
+        assert name == ""
+        assert data.shape == (24, 24)
+
+    def test_init_game_with_pool_is_reproducible(self):
+        config = _make_config(mapPool=self.POOL, mapSeed=99)
+        game1 = _init_game(config)
+        game2 = _init_game(config)
+        for y in range(game1.grid.height):
+            for x in range(game1.grid.width):
+                assert game1.grid.get_tile(x, y).type == game2.grid.get_tile(x, y).type
+
+    def test_pool_maps_padded_to_minimum(self):
+        # Sub-20x20 pool maps (e.g. crossroads at 15x15) must be ocean-padded.
+        config = _make_config(mapPool=self.POOL, mapSeed=0)
+        game = _init_game(config)
+        assert game.grid.width >= 20
+        assert game.grid.height >= 20
+
+    def test_interpreter_records_map_in_env_info(self):
+        config = _make_config(mapPool=self.POOL, mapSeed=5)
+        env = _make_env(config=config, done=True)
+        state = [
+            _make_agent_state(status="ACTIVE", observation=_make_observation(player=0)),
+            _make_agent_state(status="INACTIVE", observation=_make_observation(player=1)),
+        ]
+        interpreter(state, env)
+        assert env.info["mapName"] in self.POOL_NAMES
+        assert env.info["mapSeed"] == 5
+
+    def test_interpreter_records_drawn_seed_when_unseeded(self):
+        # mapSeed=-1 must be replaced by a concrete drawn seed in the replay.
+        config = _make_config(mapPool=self.POOL, mapSeed=-1)
+        env = _make_env(config=config, done=True)
+        state = [
+            _make_agent_state(status="ACTIVE", observation=_make_observation(player=0)),
+            _make_agent_state(status="INACTIVE", observation=_make_observation(player=1)),
+        ]
+        interpreter(state, env)
+        assert env.info["mapSeed"] >= 0
+        assert env.info["mapName"] in self.POOL_NAMES
 
 
 # ---------------------------------------------------------------------------

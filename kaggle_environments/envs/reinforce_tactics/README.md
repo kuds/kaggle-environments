@@ -111,21 +111,53 @@ Each turn, an agent returns a list of action dicts:
 | Parameter      | Default            | Description |
 |----------------|--------------------|-------------|
 | `episodeSteps` | 200                | Max turns before draw |
-| `mapName`      | `"beginner"`       | Built-in map name (see below), or empty for random generation |
-| `mapWidth`     | 20                 | Map width (10-40) &mdash; only used when `mapName` is empty |
-| `mapHeight`    | 20                 | Map height (10-40) &mdash; only used when `mapName` is empty |
-| `mapSeed`      | -1 (random)        | Seed for map generation &mdash; only used when `mapName` is empty |
+| `mapName`      | `""`               | Built-in map name (see below) to pin a single map; empty rotates through `mapPool` |
+| `mapPool`      | 5-map rotation     | Comma-separated built-in maps to rotate through randomly, one per episode |
+| `mapWidth`     | 20                 | Map width (10-40) &mdash; only used for procedural generation |
+| `mapHeight`    | 20                 | Map height (10-40) &mdash; only used for procedural generation |
+| `mapSeed`      | -1 (random)        | Seed for map-pool selection and procedural generation |
 | `enabledUnits` | `W,M,C,A,K,R,S,B` | Which unit types are available |
 | `fogOfWar`     | false              | Enable fog of war |
 | `startingGold` | 250                | Starting gold per player |
 
 ### Map Selection
 
-You can play on a **built-in map** or a **randomly generated** one.
+Map selection follows this precedence:
+
+1. **Pinned map** &mdash; a non-empty `mapName` plays that built-in map every
+   episode.
+2. **Pool rotation** (the default) &mdash; with `mapName` empty, one map is
+   drawn at random from `mapPool` each episode. The default pool is
+   `crossroads`, `the_narrows`, `island_fortress`, `center_mountains`, and
+   `cavalry_charge`.
+3. **Procedural generation** &mdash; with both `mapName` and `mapPool` empty,
+   a random map is generated from `mapWidth`/`mapHeight`.
+
+In all random cases, `mapSeed` makes the outcome reproducible: a fixed seed
+always selects the same pool map (or generates the same procedural map), while
+the default of -1 draws a fresh seed per episode. The selected map name and
+the resolved seed are recorded in `env.info` (and therefore in the replay
+JSON), so any episode can be replayed on the same map.
+
+```python
+# Default: rotate randomly through the 5-map pool, new map each episode
+env = make("reinforce_tactics")
+
+# Custom pool
+env = make("reinforce_tactics", configuration={
+    "mapPool": "beginner,skirmish,tower_rush",
+})
+
+# Reproducible rotation: the same seed always picks the same pool map
+env = make("reinforce_tactics", configuration={"mapSeed": 7})
+
+print(env.info["mapName"])  # after env.run(): which map was played
+```
 
 #### Built-in maps
 
-Set the `mapName` configuration parameter to one of these map names:
+Set the `mapName` configuration parameter to one of these map names to pin a
+single map:
 
 | Name | Size & terrain |
 |------|----------------|
@@ -159,24 +191,25 @@ All two-player (1v1) maps from the main repository are vendored here.
 env = make("reinforce_tactics", configuration={"mapName": "beginner"})
 ```
 
-#### Random generation
+#### Procedural generation
 
-When `mapName` is set to an empty string, a random map is generated using
-`mapWidth`, `mapHeight`, and `mapSeed`. The random generator places terrain
-features (forests ~10%, mountains ~5%, water ~3%), two headquarters with
-adjacent buildings, and four neutral towers near the centre.
+When both `mapName` and `mapPool` are empty strings, a random map is generated
+using `mapWidth`, `mapHeight`, and `mapSeed`. The random generator places
+terrain features (forests ~10%, mountains ~5%, water ~3%), two headquarters
+with adjacent buildings, and four neutral towers near the centre.
 
 ```python
-# Random map with a fixed seed for reproducibility
+# Procedural map with a fixed seed for reproducibility
 env = make("reinforce_tactics", configuration={
     "mapName": "",
+    "mapPool": "",
     "mapWidth": 20,
     "mapHeight": 20,
     "mapSeed": 42,
 })
 
-# Fully random map (different each run)
-env = make("reinforce_tactics", configuration={"mapName": ""})
+# Fully random procedural map (different each run)
+env = make("reinforce_tactics", configuration={"mapName": "", "mapPool": ""})
 ```
 
 #### Map format reference
@@ -192,11 +225,11 @@ map editor and additional maps.
 ```python
 from kaggle_environments import make
 
-# Create the environment with a built-in map
-env = make("reinforce_tactics", configuration={"mapName": "beginner"})
+# Create the environment (rotates randomly through the default map pool)
+env = make("reinforce_tactics")
 
-# -- or with random generation --
-# env = make("reinforce_tactics", configuration={"mapSeed": 42})
+# -- or pin a single built-in map --
+# env = make("reinforce_tactics", configuration={"mapName": "beginner"})
 
 # Run with built-in agents
 result = env.run(["random", "aggressive"])

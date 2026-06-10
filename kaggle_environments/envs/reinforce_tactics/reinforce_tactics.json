@@ -37,14 +37,19 @@
       "maximum": 40
     },
     "mapSeed": {
-      "description": "Random seed for map generation. -1 for random. Only used when mapName is empty.",
+      "description": "Random seed for map-pool selection and map generation. -1 for random. Only used when mapName is empty.",
       "type": "integer",
       "default": -1
     },
     "mapName": {
-      "description": "Name of a built-in map to use (e.g. 'beginner', 'crossroads', 'tower_rush'). Leave empty for random generation.",
+      "description": "Name of a built-in map to pin (e.g. 'beginner', 'crossroads', 'tower_rush'). Leave empty to rotate randomly through mapPool.",
       "type": "string",
-      "default": "beginner"
+      "default": ""
+    },
+    "mapPool": {
+      "description": "Comma-separated built-in map names to rotate through randomly (one is picked per episode, seeded by mapSeed) when mapName is empty. Leave both empty for procedural generation.",
+      "type": "string",
+      "default": "crossroads,the_narrows,island_fortress,center_mountains,cavalry_charge"
     },
     "enabledUnits": {
       "description": "Comma-separated list of enabled unit types (W=Warrior, M=Mage, C=Cleric, A=Archer, K=Knight, R=Rogue, S=Sorcerer, B=Barbarian).",
